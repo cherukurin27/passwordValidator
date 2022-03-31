@@ -2,6 +2,8 @@ package com.password.passwordvalidator.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,25 +26,37 @@ import com.password.passwordvalidator.response.ValidatePasswordResponse;
 @Service
 public class ValidationService {
 
-	/** The Constant LOGGER. */
-	private static final Logger LOGGER = LoggerFactory.getLogger(ValidationService.class);
-
 	private String passwordRegEx = "^(?=.*[a-z])(?=.*[0-9]).{5,12}$";
 
-	private String passwordSeqRegEx = "([^\\\\x00-\\\\x1F])\\\\1{2}";
-
-	public ResponseEntity<ValidatePasswordResponse> validatePassword(final String inputPassword) {
-		LOGGER.info("Input password: " + inputPassword);
-		if (!inputPassword.matches(passwordRegEx)) {
-			List<GenericError> errorList = new ArrayList<>();
+	public ResponseEntity<ValidatePasswordResponse> validatePassword(final String password) {
+		boolean validPasswordCheck = isValidPasswordCheck(password);
+		if (validPasswordCheck) {
+			List<GenericError> errorList = new ArrayList<GenericError>();
 			GenericError genericError = new GenericError();
+			genericError.setErrorMessage("Invalid password entered...");
 			errorList.add(genericError);
 			ValidatePasswordResponse validatePasswordResponse = new ValidatePasswordResponse();
 			validatePasswordResponse.setMessage("Invalid password");
 			validatePasswordResponse.setErrors(errorList);
-			validatePasswordResponse.setPassword(inputPassword);
-			return new ResponseEntity<ValidatePasswordResponse>(validatePasswordResponse, HttpStatus.BAD_REQUEST);
+			validatePasswordResponse.setPassword(password);
+			return new ResponseEntity<ValidatePasswordResponse>(new ValidatePasswordResponse(password),
+					HttpStatus.BAD_REQUEST);
 		}
-		return new ResponseEntity<ValidatePasswordResponse>(new ValidatePasswordResponse(inputPassword), HttpStatus.OK);
+		return new ResponseEntity<ValidatePasswordResponse>(new ValidatePasswordResponse(password), HttpStatus.OK);
 	}
+
+	private boolean isValidPasswordCheck(String str) {
+		boolean isRepeatedCheracter = false;
+		Pattern pattern = Pattern.compile("(\\w)\\1+");
+		Matcher matcher = pattern.matcher(str);
+
+		Pattern pattern1 = Pattern.compile(passwordRegEx);
+		Matcher matcher1 = pattern1.matcher(str);
+
+		if (matcher.find() || !matcher1.matches()) {
+			isRepeatedCheracter = true;
+		}
+		return isRepeatedCheracter;
+	}
+
 }
